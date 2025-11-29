@@ -1,5 +1,13 @@
 // --- OYUN AYARLARI ---
-export const GAME_DURATION = 180;
+export const GAME_DURATION = 180; // 3 Dakika
+export const ROOM_OFFSET = 60; // Odalar arası 1 dakika fark
+
+export const ROOMS = [
+  { id: 'FFA-1', offset: 0 },
+  { id: 'FFA-2', offset: ROOM_OFFSET },
+  { id: 'FFA-3', offset: ROOM_OFFSET * 2 },
+];
+
 export const MAP_SIZE = 220;
 export const MAP_LIMIT = MAP_SIZE / 2 - 5;
 export const OBJECT_COUNT = 450;
@@ -26,13 +34,13 @@ export const colors = {
 
 // Nesne tipleri ve ağırlıkları
 export const objectTypes = [
-  { type: 'human', weight: 50, points: 10, size: 0.5 }, // Weight artırıldı
-  { type: 'dog', weight: 15, points: 8, size: 0.4 },
-  { type: 'cone', weight: 20, points: 5, size: 0.3 },
-  { type: 'hydrant', weight: 15, points: 12, size: 0.5 },
-  { type: 'trash', weight: 15, points: 8, size: 0.4 },
-  { type: 'tree', weight: 30, points: 20, size: 0.8 }, // Weight artırıldı
-  { type: 'lamp', weight: 20, points: 25, size: 0.9 }, // Weight artırıldı
+  { type: 'human', weight: 70, points: 10, size: 0.5 }, // Arttı
+  { type: 'dog', weight: 25, points: 8, size: 0.4 }, // Arttı
+  { type: 'cone', weight: 40, points: 5, size: 0.3 }, // Ciddi artış (başlangıç yemi)
+  { type: 'hydrant', weight: 30, points: 12, size: 0.5 }, // Arttı
+  { type: 'trash', weight: 30, points: 8, size: 0.4 }, // Arttı
+  { type: 'tree', weight: 25, points: 20, size: 0.8 }, 
+  { type: 'lamp', weight: 20, points: 25, size: 0.9 },
   { type: 'bench', weight: 15, points: 22, size: 0.7 },
   { type: 'car', weight: 12, points: 50, size: 1.2 },
   { type: 'taxi', weight: 5, points: 55, size: 1.2 },

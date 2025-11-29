@@ -2,15 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useStore } from '../../store/gameStore';
 import { formatTime } from '../../utils/helpers';
 import { gameState } from '../../utils/gameState';
-import { MAP_SIZE } from '../../utils/constants';
-
-const HALL_OF_FAME_DATA = [
-  { id: 1, name: 'FFA-1', winner: 'YUSUF33', score: 1388539, best: 'EDGAR', bestScore: 5495448, time: '26:01' },
-  { id: 2, name: 'FFA-2', winner: 'ALI*d06', score: 1281386, best: 'Serhat72', bestScore: 5490462, time: '21:13' },
-  { id: 3, name: 'FFA-3', winner: 'xelons', score: 987604, best: 'DSXORC', bestScore: 5499080, time: '21:07' },
-  { id: 4, name: 'FFA-4', winner: 'agarz-39', score: 527557, best: 'MertCan', bestScore: 5462251, time: '22:03' },
-  { id: 5, name: 'FFA-5', winner: 'J211', score: 1597583, best: 'UMUT33', bestScore: 5491027, time: '23:06' },
-];
+import { MAP_SIZE, ROOMS } from '../../utils/constants';
 
 function UI() {
   const score = useStore((s) => s.score);
@@ -30,24 +22,40 @@ function UI() {
   const globalAnnouncements = useStore((s) => s.globalAnnouncements);
   const isHallOfFameOpen = useStore((s) => s.isHallOfFameOpen);
   const toggleHallOfFame = useStore((s) => s.toggleHallOfFame);
+  const honorBoardData = useStore((s) => s.honorBoardData); 
   const connectWallet = useStore((s) => s.connectWallet);
   const walletAddress = useStore((s) => s.walletAddress);
   const isWalletConnected = useStore((s) => s.isWalletConnected);
-  const savedNickname = useStore((s) => s.nickname); // Store'dan gelen kaydedilmiş nick
+  const savedNickname = useStore((s) => s.playerName); 
+  const currentRoomId = useStore((s) => s.currentRoomId);
   
   const [leaderboard, setLeaderboard] = useState([]);
   const [coords, setCoords] = useState({ x: 0, z: 0 });
   const [chatInput, setChatInput] = useState('');
   const [maxScore, setMaxScore] = useState(0);
   const [nickname, setNickname] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('FFA-1'); 
+  const [roomTimes, setRoomTimes] = useState({}); 
   const [error, setError] = useState('');
   const [visibleAnnouncement, setVisibleAnnouncement] = useState(null);
   const chatEndRef = useRef(null);
 
   // Nickname güncelleme
   useEffect(() => {
-     if (savedNickname) setNickname(savedNickname);
+     if (savedNickname && savedNickname !== 'Guest') setNickname(savedNickname);
   }, [savedNickname]);
+
+  // Oda sürelerini takip et
+  useEffect(() => {
+     const timer = setInterval(() => {
+        const times = {};
+        ROOMS.forEach(r => {
+           times[r.id] = useStore.getState().getRoomTime(r.id);
+        });
+        setRoomTimes(times);
+     }, 1000);
+     return () => clearInterval(timer);
+  }, []);
 
   // Initial Load
   useEffect(() => {
@@ -89,22 +97,6 @@ function UI() {
     }, 100);
     return () => clearInterval(timer);
   }, [getLeaderboard, maxScore]);
-
-  // Global Event Simulation
-  useEffect(() => {
-    const rooms = ['FFA-2', 'FFA-3', 'FFA-4', 'FFA-5', 'FFA-6'];
-    const winners = ['ProGamer', 'HoleMaster', 'CityEater', 'NoobSlayer', 'KingKong', 'DarkHole', 'Speedy'];
-    
-    const timer = setInterval(() => {
-      if (Math.random() > 0.7) { 
-        const room = rooms[Math.floor(Math.random() * rooms.length)];
-        const winner = winners[Math.floor(Math.random() * winners.length)];
-        const score = Math.floor(Math.random() * 2000000) + 500000;
-        addGlobalAnnouncement(`${room} WINNER: ${winner} [SCORE: ${score.toLocaleString()}]`);
-      }
-    }, 8000); 
-    return () => clearInterval(timer);
-  }, [addGlobalAnnouncement]);
 
   // Announcement Visibility Logic
   useEffect(() => {
@@ -157,7 +149,7 @@ function UI() {
       setTimeout(() => setError(''), 2000);
       return;
     }
-    joinGame(nickname);
+    joinGame(nickname, selectedRoom); 
   };
 
   return (
@@ -174,7 +166,7 @@ function UI() {
       {/* --- TOP CENTER: HEADER & GLOBAL ANNOUNCEMENTS --- */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none flex flex-col items-center w-full">
         <div className="text-2xl font-black text-white tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)] font-titan">
-          <span className="text-blue-400">FFA-1</span>
+          <span className="text-blue-400">{currentRoomId}</span>
           <span className="ml-3 text-yellow-400">[{formatTime(timeLeft)}]</span>
         </div>
         
@@ -241,9 +233,17 @@ function UI() {
                                 className="flex-1 border-4 border-gray-300 rounded-xl px-4 py-3 font-black text-lg focus:border-blue-500 focus:outline-none text-gray-800 placeholder-gray-400 transition-colors shadow-inner"
                                 maxLength={15}
                             />
-                            <div className="border-4 border-gray-300 rounded-xl px-3 py-3 font-black text-gray-500 bg-gray-200 cursor-not-allowed flex items-center justify-center shadow-inner">
-                                FFA-1
-                            </div>
+                            <select 
+                               value={selectedRoom}
+                               onChange={(e) => setSelectedRoom(e.target.value)}
+                               className="border-4 border-gray-300 rounded-xl px-2 py-3 font-black text-gray-600 bg-gray-100 cursor-pointer focus:outline-none focus:border-blue-500"
+                            >
+                               {ROOMS.map(r => (
+                                  <option key={r.id} value={r.id}>
+                                     {r.id} [{formatTime(roomTimes[r.id] || 0)}]
+                                  </option>
+                               ))}
+                            </select>
                         </div>
 
                         <button 
@@ -300,9 +300,12 @@ function UI() {
                              </tr>
                           </thead>
                           <tbody>
-                             {HALL_OF_FAME_DATA.map((room, index) => (
+                             {(!honorBoardData || honorBoardData.length === 0) ? (
+                                <tr><td colSpan="4" className="text-center p-4 text-gray-500 font-titan">Loading Data...</td></tr>
+                             ) : (
+                                honorBoardData.map((room, index) => (
                                 <tr 
-                                   key={room.id} 
+                                   key={index} 
                                    className="group transition-transform hover:-translate-y-1 duration-200"
                                 >
                                    <td className="px-6 py-4 bg-[#1e1e1e] rounded-l-xl border-l-4 border-blue-500 group-hover:bg-[#252525] shadow-md">
@@ -312,7 +315,7 @@ function UI() {
                                       <div className="flex items-center gap-3">
                                          <span className="text-white font-bold text-lg drop-shadow-sm">{room.winner}</span>
                                          <span className="text-xs text-[#4ade80] font-black bg-[#4ade80]/10 px-2 py-1 rounded border border-[#4ade80]/20">
-                                            {room.score.toLocaleString()}
+                                            {(room.winnerScore || 0).toLocaleString()}
                                          </span>
                                       </div>
                                    </td>
@@ -320,7 +323,7 @@ function UI() {
                                       <div className="flex items-center gap-3">
                                          <span className="text-yellow-400 font-bold text-lg drop-shadow-sm">{room.best}</span>
                                          <span className="text-xs text-yellow-500 font-black bg-yellow-500/10 px-2 py-1 rounded border border-yellow-500/20">
-                                            {room.bestScore.toLocaleString()}
+                                            {(room.bestScore || 0).toLocaleString()}
                                          </span>
                                       </div>
                                    </td>
@@ -330,7 +333,7 @@ function UI() {
                                       </span>
                                    </td>
                                 </tr>
-                             ))}
+                             )))}
                           </tbody>
                        </table>
                     </div>
@@ -379,7 +382,7 @@ function UI() {
       {/* --- TOP RIGHT: LAST WINNER & LEADERBOARD --- */}
       <div className="absolute top-4 right-4 z-10 pointer-events-none flex flex-col items-end gap-2">
         
-        {/* LAST WINNER (GÜNCELLENDİ: BÜYÜK VE BELİRGİN) */}
+        {/* LAST WINNER */}
         {lastWinner !== '---' && (
           <div className="text-yellow-400 font-black text-sm md:text-base drop-shadow-[0_3px_3px_rgba(0,0,0,0.9)] bg-black/70 px-4 py-2 rounded-lg border-2 border-yellow-500/60 tracking-wider animate-pulse mb-1 font-titan">
             WINNER: {lastWinner.toUpperCase()}
@@ -408,7 +411,7 @@ function UI() {
         </div>
       </div>
 
-      {/* --- CHAT (ALWAYS VISIBLE) --- */}
+      {/* --- CHAT --- */}
       <div className="absolute bottom-4 left-4 z-20 w-80 flex flex-col gap-2 pointer-events-auto">
         <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 scrollbar-hide mask-image-gradient">
           {chatMessages.map((msg) => (

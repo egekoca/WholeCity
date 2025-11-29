@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { GAME_DURATION, OBJECT_COUNT } from '../utils/constants';
+import { GAME_DURATION, OBJECT_COUNT, ROOMS, botNames } from '../utils/constants';
 import { generateObjects, generateBots, createObject } from '../utils/helpers';
 import { playSound, playExplosion } from '../utils/audio';
 import { gameState } from '../utils/gameState';
@@ -8,6 +8,7 @@ import { supabase } from '../utils/supabase';
 export const useStore = create((set, get) => ({
   // Oyun Durumu
   gameStatus: 'lobby', 
+  currentRoomId: 'FFA-1',
   playerName: 'Guest',
   lastWinner: '---',
   
@@ -18,7 +19,7 @@ export const useStore = create((set, get) => ({
   // Global Duyurular ve Veriler
   globalAnnouncements: [],
   isHallOfFameOpen: false,
-  honorBoardData: [], // Supabase'den gelecek
+  honorBoardData: [], 
 
   // Standart State
   score: 0,
@@ -32,6 +33,15 @@ export const useStore = create((set, get) => ({
   bombHitTime: 0,
   chatMessages: [],
 
+  // Yardımcı: Oda zamanını hesapla
+  getRoomTime: (roomId) => {
+     const now = Math.floor(Date.now() / 1000);
+     const room = ROOMS.find(r => r.id === roomId);
+     if (!room) return 0;
+     const cycle = (now + room.offset) % GAME_DURATION;
+     return GAME_DURATION - cycle;
+  },
+
   // İlk Yükleme
   initGame: () => {
     set({
@@ -41,11 +51,11 @@ export const useStore = create((set, get) => ({
       chatMessages: [{ id: 1, sender: 'System', text: 'Welcome to WHOLECITY FFA!', color: '#ffff00' }],
       isHallOfFameOpen: false
     });
-    get().fetchHonorBoard(); // Başlangıçta veriyi çek
+    get().fetchHonorBoard();
   },
 
   toggleHallOfFame: (isOpen) => {
-    if (isOpen) get().fetchHonorBoard(); // Açılırken güncelle
+    if (isOpen) get().fetchHonorBoard();
     set({ isHallOfFameOpen: isOpen });
   },
 
@@ -55,12 +65,10 @@ export const useStore = create((set, get) => ({
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const account = accounts[0];
         
-        // 1. Supabase'e Kullanıcıyı Kaydet (Upsert)
         await supabase
           .from('players')
           .upsert({ wallet_address: account, last_seen: new Date() }, { onConflict: 'wallet_address' });
 
-        // 2. Kayıtlı Nick'i LocalStorage'dan çek
         const savedNick = localStorage.getItem(`nick_${account}`);
         
         set({ 
@@ -69,7 +77,6 @@ export const useStore = create((set, get) => ({
           playerName: savedNick || '' 
         });
 
-        // 3. Honor Board'u Güncelle
         get().fetchHonorBoard();
 
       } catch (error) {
@@ -84,43 +91,53 @@ export const useStore = create((set, get) => ({
      const state = get();
      if (!state.walletAddress) return;
 
-     // Skoru Supabase'e kaydet
      const { error } = await supabase
         .from('game_results')
         .insert({
            wallet_address: state.walletAddress,
            nickname: state.playerName,
            score: state.score,
-           room_id: 'FFA-1', // Şimdilik sabit oda
+           room_id: state.currentRoomId
         });
         
      if (!error) get().fetchHonorBoard();
   },
 
   fetchHonorBoard: async () => {
-     // En yüksek 10 skoru çek
-     const { data, error } = await supabase
-        .from('game_results')
-        .select('*')
-        .order('score', { ascending: false })
-        .limit(10);
+     const promises = ROOMS.map(async (room) => {
+        // 1. Last Winner
+        const { data: lastGame } = await supabase
+           .from('game_results')
+           .select('*')
+           .eq('room_id', room.id)
+           .order('created_at', { ascending: false })
+           .limit(1);
 
-     if (data) {
-        const formatted = data.map((item) => ({
-           id: item.id,
-           name: item.room_id || 'FFA-1',
-           winner: item.nickname || 'Anonymous',
-           score: item.score,
-           best: item.nickname || 'Anonymous', // Şimdilik kazananı en iyi kabul edelim
-           bestScore: item.score,
-           time: new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }));
-        set({ honorBoardData: formatted });
-     }
+        // 2. High Score
+        const { data: highScore } = await supabase
+           .from('game_results')
+           .select('*')
+           .eq('room_id', room.id)
+           .order('score', { ascending: false })
+           .limit(1);
+
+        return {
+           id: room.id,
+           name: room.id,
+           winner: lastGame?.[0]?.nickname || '---',
+           winnerScore: lastGame?.[0]?.score || 0,
+           best: highScore?.[0]?.nickname || '---',
+           bestScore: highScore?.[0]?.score || 0,
+        };
+     });
+
+     const results = await Promise.all(promises);
+     results.sort((a, b) => a.id.localeCompare(b.id));
+     
+     set({ honorBoardData: results });
   },
 
-  // Oyuncunun Odaya Girişi
-  joinGame: (name) => {
+  joinGame: (name, roomId = 'FFA-1') => {
     gameState.playerScale = 1;
     gameState.playerPos.set(0, 0, 0); 
     
@@ -129,9 +146,13 @@ export const useStore = create((set, get) => ({
        localStorage.setItem(`nick_${state.walletAddress}`, name);
     }
 
+    const timeLeft = state.getRoomTime(roomId);
+
     set({
       gameStatus: 'playing',
       playerName: name || 'Guest',
+      currentRoomId: roomId,
+      timeLeft: timeLeft,
       score: 0,
       holeScale: 1,
       isGameOver: false,
@@ -153,10 +174,11 @@ export const useStore = create((set, get) => ({
     ];
     const winner = allPlayers.sort((a, b) => b.score - a.score)[0];
     
-    // Eğer kazanan oyuncuysa skoru kaydet
     if (winner.active && state.walletAddress) {
         get().saveGameResult();
     }
+
+    get().addGlobalAnnouncement(`${state.currentRoomId} WINNER: ${winner.name} [SCORE: ${winner.score.toLocaleString()}]`);
 
     set({
       lastWinner: winner.name,
@@ -185,20 +207,51 @@ export const useStore = create((set, get) => ({
 
   endGame: (reason) => {
     const state = get();
-    // Oyun bittiğinde skoru kaydet
     if (state.gameStatus === 'playing' && state.walletAddress) {
         get().saveGameResult();
     }
     set({ isGameOver: true, gameOverReason: reason });
   },
 
-  tick: () => set((state) => {
-    if (state.timeLeft <= 1) {
-      get().resetRound();
-      return { timeLeft: GAME_DURATION };
-    }
-    return { timeLeft: state.timeLeft - 1 };
-  }),
+  tick: () => {
+     const state = get();
+     const now = Math.floor(Date.now() / 1000);
+
+     // 1. Mevcut Odanın Kontrolü
+     const currentTimeLeft = state.getRoomTime(state.currentRoomId);
+     
+     if (currentTimeLeft <= 1 && state.gameStatus === 'playing' && !state.isGameOver) { 
+        state.resetRound();
+        return { timeLeft: GAME_DURATION };
+     }
+
+     // 2. Diğer Odaların Kontrolü (Global Duyuru ve Bot Kaydı)
+     ROOMS.forEach(room => {
+        if (room.id === state.currentRoomId) return;
+
+        const cycle = (now + room.offset) % GAME_DURATION;
+        if (cycle === GAME_DURATION - 1) {
+           const winnerName = botNames[Math.floor(Math.random() * botNames.length)];
+           // Daha gerçekçi skor (30k - 250k arası)
+           const score = Math.floor(Math.random() * 220000) + 30000;
+           
+           // Botu veritabanına kaydet
+           supabase.from('game_results').insert({
+              wallet_address: `bot_${Date.now()}_${room.id}`, // Fake ID
+              nickname: winnerName,
+              score: score,
+              room_id: room.id,
+              created_at: new Date()
+           }).then(() => {
+              state.fetchHonorBoard(); // Listeyi güncelle
+           });
+
+           state.addGlobalAnnouncement(`${room.id} WINNER: ${winnerName} [SCORE: ${score.toLocaleString()}]`);
+        }
+     });
+
+     return { timeLeft: currentTimeLeft };
+  },
 
   addPlayerScore: (pts, objId) => {
     playSound(500);
