@@ -1,4 +1,5 @@
-import { memo, useMemo } from 'react';
+import { memo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Box, Cylinder, Sphere, Cone } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -89,10 +90,12 @@ export const Car = memo(function Car({ color, size }) {
         <boxGeometry args={[0.9, 0.2, 0.4]} />
         <meshStandardMaterial color={color} />
       </mesh>
+      
       <mesh position={[-0.05, 0.3, 0]}>
         <boxGeometry args={[0.5, 0.15, 0.35]} />
         <meshStandardMaterial color="#333" roughness={0.2} />
       </mesh>
+      
       {[
         [-0.25, 0.08, 0.2], [0.25, 0.08, 0.2],
         [-0.25, 0.08, -0.2], [0.25, 0.08, -0.2]
@@ -102,6 +105,7 @@ export const Car = memo(function Car({ color, size }) {
           <meshStandardMaterial color="#111" />
         </mesh>
       ))}
+
       <mesh position={[0.46, 0.18, 0.12]}>
         <boxGeometry args={[0.02, 0.06, 0.08]} />
         <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={0.5} />
@@ -110,6 +114,7 @@ export const Car = memo(function Car({ color, size }) {
         <boxGeometry args={[0.02, 0.06, 0.08]} />
         <meshStandardMaterial color="#fff" emissive="#fff" emissiveIntensity={0.5} />
       </mesh>
+      
       <mesh position={[-0.46, 0.18, 0.12]}>
         <boxGeometry args={[0.02, 0.06, 0.08]} />
         <meshStandardMaterial color="#ff0000" />
@@ -130,10 +135,12 @@ export const Bus = memo(function Bus({ color, size }) {
         <boxGeometry args={[1.6, 0.5, 0.5]} />
         <meshStandardMaterial color={color} />
       </mesh>
+      
       <mesh position={[0, 0.4, 0]}>
         <boxGeometry args={[1.62, 0.2, 0.52]} />
         <meshStandardMaterial color="#333" />
       </mesh>
+      
       {[
         [-0.5, 0.1, 0.25], [0.5, 0.1, 0.25],
         [-0.5, 0.1, -0.25], [0.5, 0.1, -0.25]
@@ -155,14 +162,17 @@ export const Building = memo(function Building({ color, size }) {
         <boxGeometry args={[0.8, 1.0, 0.8]} />
         <meshStandardMaterial color={color} />
       </mesh>
+      
       <mesh position={[0, 1.02, 0]}>
         <boxGeometry args={[0.85, 0.05, 0.85]} />
         <meshStandardMaterial color="#333" />
       </mesh>
+
       <mesh position={[0, 0.15, 0.41]}>
         <planeGeometry args={[0.2, 0.3]} />
         <meshStandardMaterial color="#222" />
       </mesh>
+
       <mesh position={[0, 0.6, 0]}>
          <boxGeometry args={[0.82, 0.6, 0.82]} />
          <meshStandardMaterial color="#add8e6" roughness={0.1} metalness={0.5} opacity={0.8} transparent />
@@ -260,6 +270,59 @@ export const Tower = memo(({ size }) => (
   </group>
 ));
 
+// --- BOMBA ---
+export const Bomb = memo(({ size }) => {
+  const matRef = useRef();
+  
+  useFrame((state) => {
+    if (matRef.current) {
+      // Parlama efekti (Pulse)
+      const t = state.clock.getElapsedTime();
+      matRef.current.emissiveIntensity = 0.5 + Math.sin(t * 5) * 0.4;
+    }
+  });
+
+  return (
+    <group scale={size}>
+      {/* Gövde */}
+      <mesh position={[0, 0.3, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshStandardMaterial 
+          ref={matRef}
+          color="#111" 
+          emissive="#ff0000"
+          emissiveIntensity={0.5}
+          roughness={0.4}
+        />
+      </mesh>
+      {/* Fitil Tabanı */}
+      <mesh position={[0, 0.6, 0]}>
+        <cylinderGeometry args={[0.08, 0.08, 0.1, 8]} />
+        <meshStandardMaterial color="#333" />
+      </mesh>
+      {/* Fitil */}
+      <mesh position={[0, 0.7, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.2, 8]} />
+        <meshStandardMaterial color="#dcdcdc" />
+      </mesh>
+      {/* Kıvılcım */}
+      <mesh position={[0, 0.82, 0]}>
+        <sphereGeometry args={[0.04, 8, 8]} />
+        <meshBasicMaterial color="#ffff00" />
+      </mesh>
+      {/* Kuru kafa (basitçe beyaz noktalar) */}
+      <mesh position={[0.15, 0.35, 0.2]} rotation={[0, 0.2, 0]}>
+         <circleGeometry args={[0.06, 8]} />
+         <meshBasicMaterial color="#fff" side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[-0.15, 0.35, 0.2]} rotation={[0, -0.2, 0]}>
+         <circleGeometry args={[0.06, 8]} />
+         <meshBasicMaterial color="#fff" side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  );
+});
+
 export const ModelComponents = {
   human: Human,
   dog: Dog,
@@ -273,5 +336,6 @@ export const ModelComponents = {
   taxi: ({size}) => <Car size={size} color="#f1c40f" />,
   bus: Bus,
   building: Building,
-  tower: Tower
+  tower: Tower,
+  bomb: Bomb
 };

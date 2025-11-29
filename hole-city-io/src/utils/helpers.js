@@ -42,7 +42,7 @@ function getRandomType(category) {
   } else if (category === 'road') {
     filtered = objectTypes.filter(t => ['car', 'taxi', 'bus'].includes(t.type));
   } else if (category === 'sidewalk') {
-    filtered = objectTypes.filter(t => ['human', 'dog', 'trash', 'hydrant', 'cone'].includes(t.type));
+    filtered = objectTypes.filter(t => ['human', 'dog', 'trash', 'hydrant', 'cone', 'bomb'].includes(t.type));
   } else if (category === 'decoration') {
     filtered = objectTypes.filter(t => ['tree', 'lamp', 'bench'].includes(t.type));
   }

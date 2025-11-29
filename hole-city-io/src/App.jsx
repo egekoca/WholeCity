@@ -17,7 +17,7 @@ function App() {
         dpr={[1, 1.5]}
       >
         <color attach="background" args={['#87CEEB']} />
-        <fog attach="fog" args={['#87CEEB', 100, 300]} />
+        {/* <fog attach="fog" args={['#87CEEB', 100, 300]} /> */}
         <Scene />
       </Canvas>
     </div>

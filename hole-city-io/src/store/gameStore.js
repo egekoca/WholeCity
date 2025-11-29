@@ -69,21 +69,76 @@ export const useStore = create((set, get) => ({
     });
   },
 
-  eatBot: (botId) => {
-    playSound(600);
+  applyBombPenalty: (entityId) => {
+    playSound(200); // Kötü ses efekti (daha düşük pitch)
     set((state) => {
-      const bot = state.bots.find((b) => b.id === botId);
-      if (!bot) return {};
-      const bonus = bot.score + 100;
-      const newScore = state.score + bonus;
-      const newScale = 1 + newScore * 0.0004;
-      gameState.playerScale = newScale;
-      delete gameState.bots[botId];
-      return {
-        score: newScore,
-        holeScale: newScale,
-        bots: state.bots.filter((b) => b.id !== botId)
-      };
+       // Eğer OYUNCU ise
+       if (entityId === 'player') {
+          const newScore = Math.floor(state.score * 0.6); // %40 azalma
+          const newScale = Math.max(1, 1 + newScore * 0.0004); // Minimum 1
+          gameState.playerScale = newScale;
+          return { score: newScore, holeScale: newScale };
+       }
+       // Eğer BOT ise
+       else {
+          const newBots = state.bots.map(b => {
+             if (b.id === entityId) {
+                const newScore = Math.floor(b.score * 0.6);
+                const newScale = Math.max(1, 1 + newScore * 0.0004);
+                if (gameState.bots[entityId]) {
+                   gameState.bots[entityId].scale = newScale;
+                }
+                return { ...b, score: newScore, scale: newScale };
+             }
+             return b;
+          });
+          return { bots: newBots };
+       }
+    });
+  },
+
+  // Genel yeme fonksiyonu (predator: avcı, prey: av)
+  eatEntity: (predatorId, preyId) => {
+    set((state) => {
+      const preyBot = state.bots.find((b) => b.id === preyId);
+      
+      // Eğer av bir bot ise ve listede varsa
+      if (preyBot) {
+        const bonus = preyBot.score + 100; // Bot yeme bonusu
+        
+        // Eğer avcı OYUNCU ise
+        if (predatorId === 'player') {
+           playSound(600);
+           const newScore = state.score + bonus;
+           const newScale = 1 + newScore * 0.0004;
+           gameState.playerScale = newScale;
+           delete gameState.bots[preyId];
+           
+           return {
+             score: newScore,
+             holeScale: newScale,
+             bots: state.bots.filter((b) => b.id !== preyId)
+           };
+        } 
+        // Eğer avcı BAŞKA BİR BOT ise
+        else {
+           const newBots = state.bots.map(b => {
+             if (b.id === predatorId) {
+               const newScore = b.score + bonus;
+               const newScale = 1 + newScore * 0.0004;
+               if (gameState.bots[predatorId]) {
+                 gameState.bots[predatorId].scale = newScale;
+               }
+               return { ...b, score: newScore, scale: newScale };
+             }
+             return b;
+           }).filter(b => b.id !== preyId); // Avı listeden sil
+           
+           delete gameState.bots[preyId];
+           return { bots: newBots };
+        }
+      }
+      return {};
     });
   },
 

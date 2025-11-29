@@ -13,7 +13,7 @@ function PlayerHole() {
   const holeScale = useStore((s) => s.holeScale);
   const isGameOver = useStore((s) => s.isGameOver);
   const endGame = useStore((s) => s.endGame);
-  const eatBot = useStore((s) => s.eatBot);
+  const eatEntity = useStore((s) => s.eatEntity);
   const bots = useStore((s) => s.bots);
 
   useFrame((state, dt) => {
@@ -51,7 +51,7 @@ function PlayerHole() {
       const dist = Math.sqrt(dx * dx + dz * dz);
 
       if (holeScale > bot.scale * 1.2 && dist < holeScale * 0.8) {
-        eatBot(bot.id);
+        eatEntity('player', bot.id);
       } else if (bot.scale > holeScale * 1.2 && dist < bot.scale * 0.8) {
         endGame(bot.name + " swallowed you!");
       }

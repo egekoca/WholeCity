@@ -19,6 +19,7 @@ function GameObject({ data }) {
 
   const addPlayerScore = useStore((s) => s.addPlayerScore);
   const addBotScore = useStore((s) => s.addBotScore);
+  const applyBombPenalty = useStore((s) => s.applyBombPenalty);
 
   useFrame((_, dt) => {
     if (!ref.current || physics.current.consumed) return;
@@ -234,11 +235,16 @@ function GameObject({ data }) {
     // --- YUTULMA ---
     if (pos.y < -HOLE_DEPTH && bestHole) {
       physics.current.consumed = true;
-      playSound(400);
-      if (bestHole.type === 'player') {
-        addPlayerScore(data.points, data.id);
+      
+      if (data.type === 'bomb') {
+         applyBombPenalty(bestHole.id);
       } else {
-        addBotScore(bestHole.id, data.points, data.id);
+         playSound(400);
+         if (bestHole.type === 'player') {
+           addPlayerScore(data.points, data.id);
+         } else {
+           addBotScore(bestHole.id, data.points, data.id);
+         }
       }
     }
     

@@ -10,8 +10,19 @@ import DeepHole from './DeepHole';
 
 function BotHole({ bot }) {
   const ref = useRef();
-  const target = useRef({ x: rnd(MAP_SIZE - 40), z: rnd(MAP_SIZE - 40) });
+  // Hedef ve durum
+  const aiState = useRef({
+    target: { x: rnd(MAP_SIZE - 40), z: rnd(MAP_SIZE - 40) },
+    mode: 'wander', // 'wander', 'chase', 'flee'
+    changeTime: 0
+  });
+  
   const bots = useStore((s) => s.bots);
+  const objects = useStore((s) => s.objects); // Objeleri al (bomba kontrolü için)
+  const eatEntity = useStore((s) => s.eatEntity);
+  const endGame = useStore((s) => s.endGame);
+  const applyBombPenalty = useStore((s) => s.applyBombPenalty);
+  
   const currentBot = bots.find((b) => b.id === bot.id);
   const scale = currentBot?.scale || 1;
 
@@ -26,23 +37,131 @@ function BotHole({ bot }) {
     if (!ref.current) return;
 
     const pos = ref.current.position;
-    const tx = target.current.x;
-    const tz = target.current.z;
+    const ai = aiState.current;
+    const now = Date.now();
+
+    // --- AI MANTIĞI ---
+    
+    // 1. Çevreyi Tara (Tehlike ve Av)
+    let nearestPrey = null;
+    let nearestDanger = null;
+    let minPreyDist = Infinity;
+    let minDangerDist = Infinity;
+
+    // a) Oyuncuyu kontrol et
+    const pDist = Math.sqrt((pos.x - gameState.playerPos.x)**2 + (pos.z - gameState.playerPos.z)**2);
+    const pScale = gameState.playerScale;
+    
+    if (pScale > scale * 1.2) {
+      // Oyuncu tehlikeli
+      if (pDist < minDangerDist) {
+        minDangerDist = pDist;
+        nearestDanger = { x: gameState.playerPos.x, z: gameState.playerPos.z };
+      }
+    } else if (scale > pScale * 1.2) {
+      // Oyuncu av
+      if (pDist < minPreyDist) {
+        minPreyDist = pDist;
+        nearestPrey = { x: gameState.playerPos.x, z: gameState.playerPos.z, type: 'player' };
+      }
+    }
+
+    // b) Diğer botları kontrol et
+    for (const otherBotId in gameState.bots) {
+      if (otherBotId === bot.id) continue;
+      const b = gameState.bots[otherBotId];
+      const dist = Math.sqrt((pos.x - b.x)**2 + (pos.z - b.z)**2);
+      
+      if (b.scale > scale * 1.2) {
+        if (dist < minDangerDist) {
+          minDangerDist = dist;
+          nearestDanger = b;
+        }
+      } else if (scale > b.scale * 1.2) {
+        if (dist < minPreyDist) {
+          minPreyDist = dist;
+          nearestPrey = { ...b, id: otherBotId, type: 'bot' };
+        }
+      }
+    }
+
+    // c) Bomba Kontrolü (Sadece yakındaki bombaları tehlike say)
+    // Performans için her frame'de tüm objeleri taramak yerine sadece yakın tehlike yoksa bakılabilir
+    // Veya basitçe, en yakındaki objelerden bombayı bul
+    
+    // Basit optimizasyon: Sadece tehlike algılanmadıysa bomba ara
+    if (minDangerDist > scale * 3) {
+       for (const obj of objects) {
+          if (obj.type === 'bomb') {
+             const dist = Math.sqrt((pos.x - obj.x)**2 + (pos.z - obj.z)**2);
+             // Bombaya çok yakınsa ve içine düşebilecekse kaç
+             if (dist < scale * 3 && scale > obj.size) {
+                if (dist < minDangerDist) {
+                   minDangerDist = dist;
+                   nearestDanger = { x: obj.x, z: obj.z }; // Bombayı tehlike olarak işaretle
+                }
+             }
+          }
+       }
+    }
+
+    // 2. Karar Ver
+    
+    // KAÇMA (Öncelikli)
+    if (minDangerDist < scale * 4 + 5) {
+      ai.mode = 'flee';
+      // Tehlikeden uzaklaşan vektör
+      const dx = pos.x - nearestDanger.x;
+      const dz = pos.z - nearestDanger.z;
+      // Normalize et ve uzağa git
+      const len = Math.sqrt(dx*dx + dz*dz);
+      ai.target.x = pos.x + (dx/len) * 30;
+      ai.target.z = pos.z + (dz/len) * 30;
+    }
+    // KOVALAMA
+    else if (minPreyDist < scale * 5 + 15) {
+      ai.mode = 'chase';
+      ai.target.x = nearestPrey.x;
+      ai.target.z = nearestPrey.z;
+    }
+    // GEZİNME
+    else {
+      ai.mode = 'wander';
+      const distToTarget = Math.sqrt((pos.x - ai.target.x)**2 + (pos.z - ai.target.z)**2);
+      // Hedefe vardıysa veya çok zaman geçtiyse yeni hedef
+      if (distToTarget < 5 || now - ai.changeTime > 5000) {
+        ai.target = { x: rnd(MAP_SIZE - 40), z: rnd(MAP_SIZE - 40) };
+        ai.changeTime = now;
+      }
+    }
+
+    // 3. Hareket
+    const tx = ai.target.x;
+    const tz = ai.target.z;
     const dx = tx - pos.x;
     const dz = tz - pos.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-
-    if (dist < 3) {
-      target.current = { x: rnd(MAP_SIZE - 40), z: rnd(MAP_SIZE - 40) };
-    } else {
-      const speed = 6;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+    
+    const speed = 7; // Bot hızı
+    if (dist > 0.1) {
       pos.x += (dx / dist) * speed * dt;
       pos.z += (dz / dist) * speed * dt;
     }
 
+    // Sınırları koru
     pos.x = THREE.MathUtils.clamp(pos.x, -MAP_LIMIT, MAP_LIMIT);
     pos.z = THREE.MathUtils.clamp(pos.z, -MAP_LIMIT, MAP_LIMIT);
 
+    // 4. Yeme Kontrolü (Bot yiyor mu?)
+    if (ai.mode === 'chase' && minPreyDist < scale * 0.8) {
+      if (nearestPrey.type === 'player') {
+        endGame(bot.name + " swallowed you!");
+      } else if (nearestPrey.type === 'bot') {
+        eatEntity(bot.id, nearestPrey.id);
+      }
+    }
+
+    // Global state güncelle
     if (gameState.bots[bot.id]) {
       gameState.bots[bot.id].x = pos.x;
       gameState.bots[bot.id].z = pos.z;

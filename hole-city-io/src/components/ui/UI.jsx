@@ -50,7 +50,7 @@ function UI() {
 
       {/* Sağ üst - Lider Tablosu */}
       <div className="absolute top-6 right-6 z-10 pointer-events-none">
-        <div className="panel-glass p-4 w-64 bg-white/95">
+        <div className="panel-glass p-4 w-64 bg-white/70">
           <div className="flex justify-between items-center border-b-2 border-black/10 pb-2 mb-3">
             <span className="text-xs font-black text-black/70 font-nunito tracking-wider">LEADERBOARD</span>
             <span className="text-lg opacity-80">🏆</span>
