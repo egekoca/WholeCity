@@ -73,7 +73,7 @@ export const useStore = create((set, get) => ({
         
         set({ 
           walletAddress: account, 
-          isWalletConnected: true,
+          isWalletConnected: true, 
           playerName: savedNick || '' 
         });
 
@@ -153,8 +153,8 @@ export const useStore = create((set, get) => ({
       playerName: name || 'Guest',
       currentRoomId: roomId,
       timeLeft: timeLeft,
-      score: 0,
-      holeScale: 1,
+      score: 400,
+      holeScale: 1 + 400 * 0.0005,
       isGameOver: false,
       bombHitTime: 0,
     });
@@ -186,8 +186,8 @@ export const useStore = create((set, get) => ({
       bots: generateBots(),
       timeLeft: GAME_DURATION,
       isGameOver: false,
-      score: 0,
-      holeScale: 1,
+      score: 400,
+      holeScale: 1 + 400 * 0.0005,
       gameStatus: 'lobby',
       objectsToRemove: new Set()
     });
@@ -232,18 +232,16 @@ export const useStore = create((set, get) => ({
         const cycle = (now + room.offset) % GAME_DURATION;
         if (cycle === GAME_DURATION - 1) {
            const winnerName = botNames[Math.floor(Math.random() * botNames.length)];
-           // Daha gerçekçi skor (30k - 250k arası)
            const score = Math.floor(Math.random() * 220000) + 30000;
            
-           // Botu veritabanına kaydet
            supabase.from('game_results').insert({
-              wallet_address: `bot_${Date.now()}_${room.id}`, // Fake ID
+              wallet_address: `bot_${Date.now()}_${room.id}`, 
               nickname: winnerName,
               score: score,
               room_id: room.id,
               created_at: new Date()
            }).then(() => {
-              state.fetchHonorBoard(); // Listeyi güncelle
+              state.fetchHonorBoard();
            });
 
            state.addGlobalAnnouncement(`${room.id} WINNER: ${winnerName} [SCORE: ${score.toLocaleString()}]`);
@@ -256,10 +254,10 @@ export const useStore = create((set, get) => ({
   addPlayerScore: (pts, objId) => {
     playSound(500);
     set((state) => {
-      const newScore = state.score + pts;
-      const newScale = 1 + newScore * 0.0004;
-      gameState.playerScale = newScale;
-      const newRemove = new Set(state.objectsToRemove);
+          const newScore = state.score + pts;
+          const newScale = 1 + newScore * 0.0005;
+          gameState.playerScale = newScale;
+          const newRemove = new Set(state.objectsToRemove);
       newRemove.add(objId);
       return { score: newScore, holeScale: newScale, objectsToRemove: newRemove };
     });
@@ -272,7 +270,7 @@ export const useStore = create((set, get) => ({
       const newBots = state.bots.map((b) => {
         if (b.id === botId) {
           const newScore = b.score + pts;
-          const newScale = 1 + newScore * 0.0004;
+          const newScale = 1 + newScore * 0.0005;
           if (gameState.bots[botId]) {
             gameState.bots[botId].scale = newScale;
           }
@@ -289,7 +287,7 @@ export const useStore = create((set, get) => ({
     set((state) => {
        if (entityId === 'player') {
           const newScore = Math.floor(state.score * 0.6);
-          const newScale = Math.max(1, 1 + newScore * 0.0004);
+          const newScale = Math.max(1, 1 + newScore * 0.0005);
           gameState.playerScale = newScale;
           return { 
             score: newScore, 
@@ -301,7 +299,7 @@ export const useStore = create((set, get) => ({
           const newBots = state.bots.map(b => {
              if (b.id === entityId) {
                 const newScore = Math.floor(b.score * 0.6);
-                const newScale = Math.max(1, 1 + newScore * 0.0004);
+                const newScale = Math.max(1, 1 + newScore * 0.0005);
                 if (gameState.bots[entityId]) {
                    gameState.bots[entityId].scale = newScale;
                 }
@@ -324,7 +322,7 @@ export const useStore = create((set, get) => ({
         if (predatorId === 'player') {
            playSound(600);
            const newScore = state.score + bonus;
-           const newScale = 1 + newScore * 0.0004;
+           const newScale = 1 + newScore * 0.0005;
            gameState.playerScale = newScale;
            delete gameState.bots[preyId];
            
@@ -337,7 +335,7 @@ export const useStore = create((set, get) => ({
            const newBots = state.bots.map(b => {
              if (b.id === predatorId) {
                const newScore = b.score + bonus;
-               const newScale = 1 + newScore * 0.0004;
+               const newScale = 1 + newScore * 0.0005;
                if (gameState.bots[predatorId]) {
                  gameState.bots[predatorId].scale = newScale;
                }

@@ -181,6 +181,51 @@ export const Building = memo(function Building({ color, size }) {
   );
 });
 
+// --- DOUBLE DECKER (İki Katlı Otobüs) ---
+export const DoubleDecker = memo(function DoubleDecker({ size }) {
+  return (
+    <group scale={size}>
+      {/* Gövde */}
+      <mesh position={[0, 0.5, 0]}>
+        <boxGeometry args={[2.0, 1.0, 0.6]} />
+        <meshStandardMaterial color="#c0392b" />
+      </mesh>
+      
+      {/* Üst Kat Ayrımı */}
+      <mesh position={[0, 0.5, 0]}>
+        <boxGeometry args={[2.02, 0.05, 0.62]} />
+        <meshStandardMaterial color="#a93226" />
+      </mesh>
+      
+      {/* Camlar (Alt ve Üst) */}
+      {[0.3, 0.75].map((y, i) => (
+         <group key={i}>
+            {[
+              [-0.7, y, 0.31], [0, y, 0.31], [0.7, y, 0.31],
+              [-0.7, y, -0.31], [0, y, -0.31], [0.7, y, -0.31]
+            ].map((pos, j) => (
+              <mesh key={j} position={pos}>
+                <planeGeometry args={[0.5, 0.3]} />
+                <meshStandardMaterial color="#87ceeb" />
+              </mesh>
+            ))}
+         </group>
+      ))}
+
+      {/* Tekerlekler */}
+      {[
+        [-0.6, 0.1, 0.3], [0.6, 0.1, 0.3],
+        [-0.6, 0.1, -0.3], [0.6, 0.1, -0.3]
+      ].map((pos, i) => (
+        <mesh key={i} position={pos} rotation={[Math.PI/2, 0, 0]}>
+          <cylinderGeometry args={[0.15, 0.15, 0.1, 12]} />
+          <meshStandardMaterial color="#111" />
+        </mesh>
+      ))}
+    </group>
+  );
+});
+
 // --- APARTMAN (Orta) ---
 export const Apartment = memo(function Apartment({ size }) {
   return (
@@ -205,6 +250,56 @@ export const Apartment = memo(function Apartment({ size }) {
            </mesh>
         </group>
       ))}
+    </group>
+  );
+});
+
+// --- KIOSK (Büfe) ---
+export const Kiosk = memo(function Kiosk({ size }) {
+  return (
+    <group scale={size}>
+      {/* Base */}
+      <mesh position={[0, 0.4, 0]}>
+        <boxGeometry args={[0.8, 0.8, 0.8]} />
+        <meshStandardMaterial color="#e74c3c" />
+      </mesh>
+      {/* Roof */}
+      <mesh position={[0, 0.9, 0]}>
+         <coneGeometry args={[0.6, 0.4, 4]} rotation={[0, Math.PI/4, 0]} />
+         <meshStandardMaterial color="#c0392b" />
+      </mesh>
+      {/* Window */}
+      <mesh position={[0, 0.5, 0.41]}>
+         <planeGeometry args={[0.6, 0.4]} />
+         <meshStandardMaterial color="#87ceeb" />
+      </mesh>
+    </group>
+  );
+});
+
+// --- FOUNTAIN (Çeşme) ---
+export const Fountain = memo(function Fountain({ size }) {
+  return (
+    <group scale={size}>
+      {/* Base Pool */}
+      <mesh position={[0, 0.1, 0]}>
+        <cylinderGeometry args={[0.8, 0.7, 0.2, 8]} />
+        <meshStandardMaterial color="#95a5a6" />
+      </mesh>
+      {/* Center Pillar */}
+      <mesh position={[0, 0.5, 0]}>
+        <cylinderGeometry args={[0.2, 0.3, 0.8, 8]} />
+        <meshStandardMaterial color="#7f8c8d" />
+      </mesh>
+      {/* Water */}
+      <mesh position={[0, 0.15, 0]}>
+         <circleGeometry args={[0.65, 16]} rotation={[-Math.PI/2, 0, 0]} />
+         <meshStandardMaterial color="#3498db" />
+      </mesh>
+      <mesh position={[0, 0.95, 0]}>
+         <sphereGeometry args={[0.15, 8, 8]} />
+         <meshStandardMaterial color="#3498db" />
+      </mesh>
     </group>
   );
 });
@@ -372,6 +467,43 @@ export const Bomb = memo(({ size }) => {
   );
 });
 
+// --- COLOSSUS (Mega Yapı) ---
+export const Colossus = memo(function Colossus({ size }) {
+  return (
+    <group scale={size}>
+      {/* Ana Gövde */}
+      <mesh position={[0, 3, 0]}>
+        <boxGeometry args={[1.8, 6.0, 1.8]} />
+        <meshStandardMaterial color="#2c3e50" metalness={0.9} roughness={0.1} />
+      </mesh>
+      
+      {/* Yan Destekler */}
+      {[0, 90, 180, 270].map((rot, i) => (
+         <group key={i} rotation={[0, (rot * Math.PI) / 180, 0]}>
+            <mesh position={[1.2, 1.5, 0]} rotation={[0, 0, -0.2]}>
+               <boxGeometry args={[0.5, 4.0, 0.8]} />
+               <meshStandardMaterial color="#34495e" />
+            </mesh>
+         </group>
+      ))}
+
+      {/* Altın Halkalar */}
+      {[2, 4, 5.5].map((y, i) => (
+         <mesh key={i} position={[0, y, 0]}>
+            <cylinderGeometry args={[1.0, 1.0, 0.2, 8]} />
+            <meshStandardMaterial color="#f1c40f" emissive="#f1c40f" emissiveIntensity={0.4} />
+         </mesh>
+      ))}
+
+      {/* Zirve Kristali */}
+      <mesh position={[0, 6.5, 0]}>
+         <octahedronGeometry args={[0.8]} />
+         <meshStandardMaterial color="#e74c3c" emissive="#e74c3c" emissiveIntensity={1} />
+      </mesh>
+    </group>
+  );
+});
+
 export const ModelComponents = {
   human: Human,
   dog: Dog,
@@ -384,9 +516,13 @@ export const ModelComponents = {
   car: Car,
   taxi: ({size}) => <Car size={size} color="#f1c40f" />,
   bus: Bus,
+  double_decker: DoubleDecker,
+  kiosk: Kiosk,
+  fountain: Fountain,
   building: Building,
   apartment: Apartment,
   skyscraper: Skyscraper,
   tower: Tower,
+  colossus: Colossus,
   bomb: Bomb
 };

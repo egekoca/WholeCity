@@ -38,14 +38,14 @@ function getNearestRoadCoord(coord) {
   function getRandomType(category) {
     let filtered = objectTypes;
     if (category === 'building') {
-      filtered = objectTypes.filter(t => ['building', 'apartment', 'skyscraper', 'tower'].includes(t.type));
+      filtered = objectTypes.filter(t => ['building', 'apartment', 'skyscraper', 'tower', 'colossus'].includes(t.type));
     } else if (category === 'road') {
-    filtered = objectTypes.filter(t => ['car', 'taxi', 'bus'].includes(t.type));
-  } else if (category === 'sidewalk') {
-    filtered = objectTypes.filter(t => ['human', 'dog', 'trash', 'hydrant', 'cone', 'bomb'].includes(t.type));
-  } else if (category === 'decoration') {
-    filtered = objectTypes.filter(t => ['tree', 'lamp', 'bench'].includes(t.type));
-  }
+      filtered = objectTypes.filter(t => ['car', 'taxi', 'bus', 'double_decker'].includes(t.type));
+    } else if (category === 'sidewalk') {
+      filtered = objectTypes.filter(t => ['human', 'dog', 'trash', 'hydrant', 'cone', 'bomb', 'kiosk'].includes(t.type));
+    } else if (category === 'decoration') {
+      filtered = objectTypes.filter(t => ['tree', 'lamp', 'bench', 'fountain', 'bomb'].includes(t.type));
+    }
   
   const total = filtered.reduce((s, t) => s + t.weight, 0);
   let r = Math.random() * total;
@@ -163,6 +163,9 @@ export function createObject(forceType = null, overrideX = null, overrideZ = nul
 export function generateObjects() {
   const objects = [];
   
+  // 0. Devasa Mega Yapı (Boss) - Sadece 1 adet, harita ortasına yakın
+  objects.push(createObject('colossus', rnd(30), rnd(30)));
+
   // 1. Binaları yerleştir
   // Grid çizgileri üzerinde döngü
   for (let x = GRID_START; x < MAP_SIZE/2; x += BLOCK_SIZE) {

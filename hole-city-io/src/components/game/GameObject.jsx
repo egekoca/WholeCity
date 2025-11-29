@@ -140,6 +140,13 @@ function GameObject({ data }) {
 
     const isFalling = supportFactor < 0.3 || pos.y < -0.1;
     
+    // --- UYKU MODU (Performans Optimizasyonu) ---
+    // Eğer nesne düşmüyorsa ve oyuncuya uzaksa fizik hesaplamalarını %90 azalt
+    // Araçlar (data.direction) her zaman çalışır
+    if (!isFalling && !data.direction && distPlayer > 35) {
+       if (Math.random() > 0.1) return;
+    }
+
     // ============================================
     // 3. KUVVETLER
     // ============================================

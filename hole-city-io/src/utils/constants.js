@@ -10,10 +10,9 @@ export const ROOMS = [
 
 export const MAP_SIZE = 220;
 export const MAP_LIMIT = MAP_SIZE / 2 - 5;
-export const OBJECT_COUNT = 450;
+export const OBJECT_COUNT = 500; // Optimizasyon için 600 -> 500
 export const BOT_COUNT = 8;
 export const HOLE_DEPTH = 50;
-export const HOLE_EXPANSION = 2.0;
 export const BOUNCE_DAMPING = 0.5;
 export const WALL_FRICTION = 0.92;
 export const GRAVITY_STRENGTH = 25;
@@ -29,27 +28,44 @@ export const colors = {
   human: ['#e74c3c', '#3498db', '#f1c40f', '#9b59b6', '#1abc9c'],
   car: ['#2c3e50', '#c0392b', '#2980b9', '#8e44ad'],
   bus: ['#c0392b', '#e67e22', '#27ae60'],
-  building: ['#95a5a6', '#7f8c8d', '#bdc3c7']
+  building: ['#95a5a6', '#7f8c8d', '#bdc3c7'],
+  apartment: ['#b0c4de', '#a9a9a9'],
+  skyscraper: ['#6a5acd', '#4682b4']
 };
 
 // Nesne tipleri ve ağırlıkları
+// Başlangıç nesneleri (yemler) ciddi oranda artırıldı
 export const objectTypes = [
-  { type: 'human', weight: 70, points: 10, size: 0.5 }, // Arttı
-  { type: 'dog', weight: 25, points: 8, size: 0.4 }, // Arttı
-  { type: 'cone', weight: 40, points: 5, size: 0.3 }, // Ciddi artış (başlangıç yemi)
-  { type: 'hydrant', weight: 30, points: 12, size: 0.5 }, // Arttı
-  { type: 'trash', weight: 30, points: 8, size: 0.4 }, // Arttı
-  { type: 'tree', weight: 25, points: 20, size: 0.8 }, 
-  { type: 'lamp', weight: 20, points: 25, size: 0.9 },
-  { type: 'bench', weight: 15, points: 22, size: 0.7 },
-  { type: 'car', weight: 12, points: 50, size: 1.2 },
-  { type: 'taxi', weight: 5, points: 55, size: 1.2 },
-  { type: 'bus', weight: 4, points: 100, size: 1.8 },
-  { type: 'building', weight: 6, points: 200, size: 2.2 }, // Weight artırıldı
-  { type: 'apartment', weight: 4, points: 350, size: 2.8 }, // Yeni
-  { type: 'tower', weight: 2, points: 500, size: 4.0 }, // Weight artırıldı
-  { type: 'skyscraper', weight: 1.5, points: 800, size: 5.0 }, // Yeni (Devasa)
-  { type: 'bomb', weight: 0.8, points: -999, size: 2.5 } // Daha da büyük
+  { type: 'human', weight: 100, points: 10, size: 1.2 }, 
+  { type: 'dog', weight: 40, points: 8, size: 1.0 },
+  { type: 'cone', weight: 80, points: 5, size: 0.9 },
+  { type: 'hydrant', weight: 50, points: 12, size: 1.1 },
+  { type: 'trash', weight: 60, points: 8, size: 1.0 },
+  { type: 'tree', weight: 30, points: 25, size: 1.5 }, 
+  { type: 'lamp', weight: 25, points: 20, size: 1.4 },
+  { type: 'bench', weight: 20, points: 18, size: 1.3 },
+  
+  // Araçlar
+  { type: 'car', weight: 10, points: 50, size: 1.4 },
+  { type: 'taxi', weight: 5, points: 55, size: 1.4 },
+  { type: 'bus', weight: 3, points: 100, size: 2.0 },
+  // Ara Nesne: Otobüs (Büyük)
+  { type: 'double_decker', weight: 5, points: 150, size: 2.2 },
+  
+  // Yeni Orta Seviye Nesneler (Puanlar dengelendi)
+  { type: 'kiosk', weight: 5, points: 120, size: 1.8 }, 
+  { type: 'fountain', weight: 4, points: 130, size: 2.0 },
+
+  // Binalar
+  { type: 'building', weight: 6, points: 200, size: 2.2 }, 
+  { type: 'apartment', weight: 4, points: 350, size: 3.0 },
+  { type: 'tower', weight: 2, points: 500, size: 4.5 },
+  { type: 'skyscraper', weight: 1.5, points: 800, size: 6.0 },
+  // Devasa Mega Yapı (Boss)
+  { type: 'colossus', weight: 0, points: 2500, size: 10.0 },
+  
+  // Bomba
+  { type: 'bomb', weight: 3.0, points: -500, size: 2.5 } 
 ];
 
 export const totalWeight = objectTypes.reduce((s, t) => s + t.weight, 0);
