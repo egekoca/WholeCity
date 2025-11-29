@@ -34,6 +34,9 @@ function UI() {
   const updateSettings = useStore((s) => s.updateSettings);
   const startSpectating = useStore((s) => s.startSpectating);
   const globalHighScore = useStore((s) => s.globalHighScore);
+  const roundResults = useStore((s) => s.roundResults);
+  const showRoundResults = useStore((s) => s.showRoundResults);
+  const closeRoundResults = useStore((s) => s.closeRoundResults);
   
   const [leaderboard, setLeaderboard] = useState([]);
   const [coords, setCoords] = useState({ x: 0, z: 0 });
@@ -501,7 +504,7 @@ function UI() {
         </>
       )}
 
-      {/* ... PLAYING HUD ... */}
+      {/* --- PLAYING HUD --- */}
       {gameStatus === 'playing' && !isGameOver && (
         <>
           {/* Top Left: Stats & Minimap */}
@@ -529,7 +532,7 @@ function UI() {
         </>
       )}
 
-      {/* ... TOP RIGHT: LAST WINNER & LEADERBOARD ... */}
+      {/* --- TOP RIGHT: LAST WINNER & LEADERBOARD --- */}
       <div className="absolute top-4 right-4 z-10 pointer-events-none flex flex-col items-end gap-2">
         
         {/* LAST WINNER */}
@@ -561,7 +564,7 @@ function UI() {
         </div>
       </div>
 
-      {/* ... CHAT ... */}
+      {/* --- CHAT --- */}
       {!settings.hideChat && (
         <div className="absolute bottom-4 left-4 z-20 w-80 flex flex-col gap-2 pointer-events-auto">
           <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 scrollbar-hide mask-image-gradient">
@@ -587,7 +590,49 @@ function UI() {
         </div>
       )}
 
-      {/* ... GAME OVER MODAL ... */}
+      {/* --- ROUND RESULTS MODAL (NEW) --- */}
+      {showRoundResults && (
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[80] animate-pop">
+          <div className="bg-[#1a1a1a] border-4 border-[#333] rounded-2xl p-8 text-center max-w-md w-full mx-4 shadow-2xl relative overflow-hidden">
+            {/* Header */}
+            <div className="relative z-10">
+               <div className="text-6xl mb-2 drop-shadow-lg">🏆</div>
+               <h2 className="text-4xl text-white font-titan mb-1 text-shadow-lg tracking-wide uppercase">
+                 {currentRoomId} ENDED
+               </h2>
+               <p className="text-gray-400 font-bold mb-6 text-sm tracking-widest">TOP 5 SURVIVORS</p>
+            </div>
+
+            {/* List */}
+            <div className="bg-[#252525] rounded-xl p-4 mb-8 border border-white/5 flex flex-col gap-2">
+               {roundResults.map((player, index) => (
+                  <div key={index} className={`flex justify-between items-center p-3 rounded-lg ${player.isMe ? 'bg-yellow-500/20 border border-yellow-500/50' : 'bg-black/20'}`}>
+                     <div className="flex items-center gap-3">
+                        <span className={`font-black text-xl w-6 text-left ${index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-amber-600' : 'text-gray-600'}`}>
+                           {index + 1}
+                        </span>
+                        <span className={`font-bold ${player.isMe ? 'text-yellow-300' : 'text-white'}`}>
+                           {player.name}
+                        </span>
+                     </div>
+                     <span className="font-mono text-white/80 font-bold">
+                        {(player.score > 1000 ? (player.score/1000).toFixed(1) + 'k' : player.score)}
+                     </span>
+                  </div>
+               ))}
+            </div>
+            
+            <button
+              onClick={closeRoundResults}
+              className="w-full bg-green-600 hover:bg-green-500 text-white font-titan py-4 rounded-xl text-xl transition-all transform hover:-translate-y-1 shadow-[0_4px_0_#15803d] active:shadow-none active:translate-y-1"
+            >
+              CONTINUE
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- GAME OVER MODAL --- */}
       {isGameOver && gameStatus === 'playing' && (
         <div className="absolute inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 animate-pop">
           <div className="bg-[#1a1a1a] border-4 border-[#333] rounded-2xl p-8 text-center max-w-md w-full mx-4 shadow-2xl relative">

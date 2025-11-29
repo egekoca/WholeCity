@@ -13,6 +13,14 @@ export const useStore = create((set, get) => ({
   lastWinner: '---',
   isSpectating: false,
   
+  // Oyun Sonu / Round Results
+  roundResults: [],
+  showRoundResults: false,
+  closeRoundResults: () => {
+     set({ showRoundResults: false });
+     get().resetRound();
+  },
+
   // Ayarlar
   settings: {
     showNames: true,
@@ -184,6 +192,7 @@ export const useStore = create((set, get) => ({
       holeScale: 1 + 400 * 0.0005,
       isGameOver: false,
       bombHitTime: 0,
+      showRoundResults: false // Reset
     });
   },
 
@@ -199,14 +208,16 @@ export const useStore = create((set, get) => ({
         playerName: 'Spectator',
         isGameOver: false,
         score: 0,
-        holeScale: 1
+        holeScale: 1,
+        showRoundResults: false // Reset
      });
   },
 
   returnToLobby: () => set({
     gameStatus: 'lobby',
     isGameOver: false,
-    isSpectating: false
+    isSpectating: false,
+    showRoundResults: false
   }),
 
   resetRound: () => {
@@ -234,7 +245,8 @@ export const useStore = create((set, get) => ({
       holeScale: 1 + 400 * 0.0005,
       gameStatus: 'lobby',
       isSpectating: false,
-      objectsToRemove: new Set()
+      objectsToRemove: new Set(),
+      showRoundResults: false 
     });
   },
 
@@ -265,10 +277,14 @@ export const useStore = create((set, get) => ({
      // 1. Mevcut Odanın Kontrolü
      const currentTimeLeft = state.getRoomTime(state.currentRoomId);
      
-     // Spectator için süre bitince lobiye dönmek yerine yeni tura geçiş
-     if (currentTimeLeft <= 1 && state.gameStatus === 'playing' && !state.isGameOver) { 
-        state.resetRound();
-        return { timeLeft: GAME_DURATION };
+     // STATE GÜNCELLEMESİ EKLENDİ (UI Donması Çözüldü)
+     set({ timeLeft: currentTimeLeft });
+
+     if (currentTimeLeft <= 1 && state.gameStatus === 'playing' && !state.isGameOver && !state.showRoundResults) { 
+        // Round bitti, sonuçları göster
+        const leaderboard = state.getLeaderboard().slice(0, 5);
+        set({ roundResults: leaderboard, showRoundResults: true });
+        return; 
      }
 
      // 2. Diğer Odaların Kontrolü
@@ -293,8 +309,6 @@ export const useStore = create((set, get) => ({
            state.addGlobalAnnouncement(`${room.id} WINNER: ${winnerName} [SCORE: ${score.toLocaleString()}]`);
         }
      });
-
-     return { timeLeft: currentTimeLeft };
   },
 
   addPlayerScore: (pts, objId) => {
