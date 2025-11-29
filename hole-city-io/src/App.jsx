@@ -13,9 +13,15 @@ function App() {
     >
       <UI />
       <Canvas 
-        camera={{ fov: 50, near: 0.1, far: 1500 }} 
+        camera={{ fov: 50, near: 0.1, far: 5000 }} // Far artırıldı
         dpr={[1, 1.5]}
-        gl={{ stencil: true, alpha: false, antialias: true }}
+        gl={{ 
+           stencil: true, 
+           alpha: false, 
+           antialias: false, // Performans için kapattım (post-process yoksa gerek yok)
+           powerPreference: "high-performance",
+           logarithmicDepthBuffer: true // Çizgi çökme sorununu çözer!
+        }}
       >
         <color attach="background" args={['#87CEEB']} />
         {/* <fog attach="fog" args={['#87CEEB', 100, 300]} /> */}

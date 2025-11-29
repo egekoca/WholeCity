@@ -21,15 +21,17 @@ function GameObject({ data }) {
   const addBotScore = useStore((s) => s.addBotScore);
   const applyBombPenalty = useStore((s) => s.applyBombPenalty);
 
-  // Başlangıç rotasyonu hesaplama
-  const initialRotY = data.direction 
-     ? (data.direction.x !== 0 
-        ? (data.direction.x > 0 ? 0 : Math.PI) 
-        : (data.direction.z > 0 ? Math.PI / 2 : -Math.PI / 2))
-     : 0;
+    const frameOffset = useRef(Math.floor(Math.random() * 10));
 
-  useFrame((_, dt) => {
-    if (!ref.current || physics.current.consumed) return;
+    // Başlangıç rotasyonu hesaplama
+    const initialRotY = data.direction 
+       ? (data.direction.x !== 0 
+          ? (data.direction.x > 0 ? 0 : Math.PI) 
+          : (data.direction.z > 0 ? Math.PI / 2 : -Math.PI / 2))
+       : 0;
+  
+    useFrame((state, dt) => {
+      if (!ref.current || physics.current.consumed) return;
 
     const p = physics.current;
     const pos = ref.current.position;
@@ -121,9 +123,12 @@ function GameObject({ data }) {
       holeRadius = bestHole.radius;
       
       // YUTMA KONTROLÜ: Objeden belirgin şekilde büyük olmalı
-      const canSwallow = bestHole.radius > objSize * 0.8; 
+      const canSwallow = bestHole.radius > objSize * 0.85; 
       
-      if (canSwallow) {
+      if (!canSwallow) {
+        // KESİN YEMEME: Destek tam, asla içine düşmez
+        supportFactor = 1.0;
+      } else {
         const distFromEdge = distToBestHole - bestHole.radius;
         const objectRadius = objSize * 0.4;
         
@@ -140,11 +145,12 @@ function GameObject({ data }) {
 
     const isFalling = supportFactor < 0.3 || pos.y < -0.1;
     
-    // --- UYKU MODU (Performans Optimizasyonu) ---
-    // Eğer nesne düşmüyorsa ve oyuncuya uzaksa fizik hesaplamalarını %90 azalt
-    // Araçlar (data.direction) her zaman çalışır
-    if (!isFalling && !data.direction && distPlayer > 35) {
-       if (Math.random() > 0.1) return;
+    // --- UYKU MODU (Optimize Edilmiş) ---
+    // Deterministik kontrol (titremeyi önler)
+    if (!isFalling && !data.direction && distPlayer > 40) {
+       // Sadece belirli frame'lerde çalışır
+       const frameCheck = Math.floor(state.clock.elapsedTime * 60) + frameOffset.current;
+       if (frameCheck % 15 !== 0) return;
     }
 
     // ============================================

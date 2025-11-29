@@ -10,7 +10,7 @@ export const ROOMS = [
 
 export const MAP_SIZE = 220;
 export const MAP_LIMIT = MAP_SIZE / 2 - 5;
-export const OBJECT_COUNT = 500; // Optimizasyon için 600 -> 500
+export const OBJECT_COUNT = 600; 
 export const BOT_COUNT = 8;
 export const HOLE_DEPTH = 50;
 export const BOUNCE_DAMPING = 0.5;
@@ -41,7 +41,7 @@ export const objectTypes = [
   { type: 'cone', weight: 80, points: 5, size: 0.9 },
   { type: 'hydrant', weight: 50, points: 12, size: 1.1 },
   { type: 'trash', weight: 60, points: 8, size: 1.0 },
-  { type: 'tree', weight: 30, points: 25, size: 1.5 }, 
+  { type: 'tree', weight: 30, points: 15, size: 1.1 }, 
   { type: 'lamp', weight: 25, points: 20, size: 1.4 },
   { type: 'bench', weight: 20, points: 18, size: 1.3 },
   
