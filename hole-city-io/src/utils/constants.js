@@ -81,6 +81,6 @@ export const SKINS = [
   { id: 'green', name: 'Emerald', color: '#2ecc71', type: 'standard', price: 0 },
   { id: 'purple', name: 'Void', color: '#9b59b6', type: 'standard', price: 0 },
   { id: 'gold', name: 'Midas', color: '#f1c40f', type: 'standard', price: 0 },
-  { id: 'legendary', name: 'ZEUS', color: '#00ffff', type: 'legendary', price: 0 }, // Elektrikli
-  { id: 'electro', name: 'Electro', color: '#2962ff', type: 'legendary', price: 0 } // Mavi Alev/Elektrik
+  { id: 'legendary', name: 'Pink Nova', color: '#e040fb', type: 'legendary', price: 0 }, // Mor/Pembe
+  { id: 'electro', name: 'Electro', color: '#2962ff', type: 'legendary', price: 0 } // Mavi
 ];

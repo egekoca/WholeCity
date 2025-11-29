@@ -9,16 +9,16 @@ import PlayerHole from './PlayerHole';
 import BotHole from './BotHole';
 import GameObject from './GameObject';
 
-function SpectatorCamera() {
+function SpectatorControls() {
   const { camera } = useThree();
+  const angle = useRef(0);
   
-  useFrame(() => {
-    // İzleyici Kamerası: Haritanın ortasında dönüyor
-    const time = Date.now() * 0.0001;
-    const radius = 80;
-    camera.position.x = Math.sin(time) * radius;
-    camera.position.z = Math.cos(time) * radius;
-    camera.position.y = 60;
+  useFrame((_, dt) => {
+    angle.current += dt * 0.1;
+    const radius = 100;
+    camera.position.x = Math.sin(angle.current) * radius;
+    camera.position.z = Math.cos(angle.current) * radius;
+    camera.position.y = 80;
     camera.lookAt(0, 0, 0);
   });
   return null;
@@ -27,10 +27,12 @@ function SpectatorCamera() {
 function Scene() {
   const objects = useStore((s) => s.objects);
   const bots = useStore((s) => s.bots);
-  const gameStatus = useStore((s) => s.gameStatus); // 'lobby' or 'playing'
+  const gameStatus = useStore((s) => s.gameStatus);
+  const isSpectating = useStore((s) => s.isSpectating);
 
   return (
     <>
+      {/* ... Lights & Grounds ... */}
       <ambientLight intensity={0.7} />
       <directionalLight position={[50, 80, 50]} intensity={0.9} />
 
@@ -65,8 +67,8 @@ function Scene() {
       <Roads />
       <Spawner />
       
-      {/* Oyun durumuna göre PlayerHole veya Kamera */}
-      {gameStatus === 'playing' ? <PlayerHole /> : <SpectatorCamera />}
+      {/* Oyun durumuna göre PlayerHole veya Spectator Kamera */}
+      {gameStatus === 'playing' && !isSpectating ? <PlayerHole /> : <SpectatorControls />}
 
       {bots.map((b) => (
         <BotHole key={b.id} bot={b} />

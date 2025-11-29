@@ -21,8 +21,9 @@ function PlayerHole() {
   const eatEntity = useStore((s) => s.eatEntity);
   const bots = useStore((s) => s.bots);
   const bombHitTime = useStore((s) => s.bombHitTime); 
-  const selectedSkin = useStore((s) => s.selectedSkin); // Skin bilgisini al
-  const skins = useStore.getState().skins; // veya constants'tan alabiliriz ama store daha temiz olur
+  const selectedSkin = useStore((s) => s.selectedSkin);
+  const settings = useStore((s) => s.settings);
+  const score = useStore((s) => s.score); // Skoru gösterim için al
 
   useFrame((state, dt) => {
     if (!ref.current || isGameOver) return;
@@ -99,17 +100,21 @@ function PlayerHole() {
 
   return (
     <group ref={ref} position={[0, 0, 0]}>
-      <Text
-        position={[0, 3, 0]}
-        fontSize={0.9}
-        color={isHit ? "#ff0000" : "#fff"} 
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.08}
-        outlineColor={isHit ? "#000" : "#2980b9"}
-      >
-        YOU
-      </Text>
+      {(settings.showNames || settings.showScore) && (
+        <Text
+          position={[0, 3, 0]}
+          fontSize={0.9}
+          color={isHit ? "#ff0000" : "#fff"} 
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.08}
+          outlineColor={isHit ? "#000" : "#2980b9"}
+        >
+          {settings.showNames ? 'YOU' : ''}
+          {settings.showNames && settings.showScore ? ' ' : ''}
+          {settings.showScore ? `(${score})` : ''}
+        </Text>
+      )}
       <group ref={holeGroupRef}>
         <DeepHole scale={1} color={holeColor} isPlayer={true} skinId={selectedSkin} />
       </group>

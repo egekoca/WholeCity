@@ -11,7 +11,18 @@ export const useStore = create((set, get) => ({
   currentRoomId: 'FFA-1',
   playerName: 'Guest',
   lastWinner: '---',
+  isSpectating: false,
   
+  // Ayarlar
+  settings: {
+    showNames: true,
+    showScore: true,
+    hideChat: false
+  },
+  updateSettings: (newSettings) => set(state => ({ 
+    settings: { ...state.settings, ...newSettings } 
+  })),
+
   // Web3 / Cüzdan
   walletAddress: null,
   isWalletConnected: false,
@@ -154,6 +165,7 @@ export const useStore = create((set, get) => ({
 
     set({
       gameStatus: 'playing',
+      isSpectating: false,
       playerName: name || 'Guest',
       currentRoomId: roomId,
       timeLeft: timeLeft,
@@ -164,16 +176,33 @@ export const useStore = create((set, get) => ({
     });
   },
 
+  startSpectating: (roomId) => {
+     const state = get();
+     const timeLeft = state.getRoomTime(roomId);
+     
+     set({
+        gameStatus: 'playing',
+        isSpectating: true,
+        currentRoomId: roomId,
+        timeLeft: timeLeft,
+        playerName: 'Spectator',
+        isGameOver: false,
+        score: 0,
+        holeScale: 1
+     });
+  },
+
   returnToLobby: () => set({
     gameStatus: 'lobby',
-    isGameOver: false
+    isGameOver: false,
+    isSpectating: false
   }),
 
   resetRound: () => {
     const state = get();
     
     const allPlayers = [
-      { name: state.playerName, score: state.score, active: state.gameStatus === 'playing' },
+      { name: state.playerName, score: state.score, active: state.gameStatus === 'playing' && !state.isSpectating },
       ...state.bots
     ];
     const winner = allPlayers.sort((a, b) => b.score - a.score)[0];
@@ -193,6 +222,7 @@ export const useStore = create((set, get) => ({
       score: 400,
       holeScale: 1 + 400 * 0.0005,
       gameStatus: 'lobby',
+      isSpectating: false,
       objectsToRemove: new Set()
     });
   },
@@ -211,7 +241,7 @@ export const useStore = create((set, get) => ({
 
   endGame: (reason) => {
     const state = get();
-    if (state.gameStatus === 'playing' && state.walletAddress) {
+    if (state.gameStatus === 'playing' && !state.isSpectating && state.walletAddress) {
         get().saveGameResult();
     }
     set({ isGameOver: true, gameOverReason: reason });
@@ -224,12 +254,13 @@ export const useStore = create((set, get) => ({
      // 1. Mevcut Odanın Kontrolü
      const currentTimeLeft = state.getRoomTime(state.currentRoomId);
      
+     // Spectator için süre bitince lobiye dönmek yerine yeni tura geçiş
      if (currentTimeLeft <= 1 && state.gameStatus === 'playing' && !state.isGameOver) { 
         state.resetRound();
         return { timeLeft: GAME_DURATION };
      }
 
-     // 2. Diğer Odaların Kontrolü (Global Duyuru ve Bot Kaydı)
+     // 2. Diğer Odaların Kontrolü
      ROOMS.forEach(room => {
         if (room.id === state.currentRoomId) return;
 
@@ -256,12 +287,15 @@ export const useStore = create((set, get) => ({
   },
 
   addPlayerScore: (pts, objId) => {
+    // Spectator puan alamaz
+    if (get().isSpectating) return;
+
     playSound(500);
     set((state) => {
-          const newScore = state.score + pts;
-          const newScale = 1 + newScore * 0.0005;
-          gameState.playerScale = newScale;
-          const newRemove = new Set(state.objectsToRemove);
+      const newScore = state.score + pts;
+      const newScale = 1 + newScore * 0.0005;
+      gameState.playerScale = newScale;
+      const newRemove = new Set(state.objectsToRemove);
       newRemove.add(objId);
       return { score: newScore, holeScale: newScale, objectsToRemove: newRemove };
     });
@@ -290,6 +324,7 @@ export const useStore = create((set, get) => ({
     playExplosion();
     set((state) => {
        if (entityId === 'player') {
+          if (state.isSpectating) return {}; // Spectator etkilenmez
           const newScore = Math.floor(state.score * 0.6);
           const newScale = Math.max(1, 1 + newScore * 0.0005);
           gameState.playerScale = newScale;
@@ -324,6 +359,8 @@ export const useStore = create((set, get) => ({
         const bonus = preyBot.score + 100;
         
         if (predatorId === 'player') {
+           if (state.isSpectating) return {}; // Spectator yiyemez
+
            playSound(600);
            const newScore = state.score + bonus;
            const newScale = 1 + newScore * 0.0005;
@@ -371,7 +408,7 @@ export const useStore = create((set, get) => ({
 
   getLeaderboard: () => {
     const state = get();
-    const playerEntry = state.gameStatus === 'playing' 
+    const playerEntry = (state.gameStatus === 'playing' && !state.isSpectating)
       ? [{ id: 'player', name: state.playerName, score: state.score, isMe: true }]
       : []; 
       

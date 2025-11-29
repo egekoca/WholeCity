@@ -22,9 +22,11 @@ function BotHole({ bot }) {
   const eatEntity = useStore((s) => s.eatEntity);
   const endGame = useStore((s) => s.endGame);
   const applyBombPenalty = useStore((s) => s.applyBombPenalty);
+  const settings = useStore((s) => s.settings);
   
   const currentBot = bots.find((b) => b.id === bot.id);
   const scale = currentBot?.scale || 1;
+  const score = currentBot?.score || 0;
 
   useEffect(() => {
     gameState.bots[bot.id] = { x: bot.x, z: bot.z, scale: 1 };
@@ -198,17 +200,21 @@ function BotHole({ bot }) {
 
   return (
     <group ref={ref} position={[bot.x, 0, bot.z]}>
-      <Text
-        position={[0, 3, 0]}
-        fontSize={0.9}
-        color={bot.color}
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.05}
-        outlineColor="#000"
-      >
-        {bot.name}
-      </Text>
+      {(settings.showNames || settings.showScore) && (
+        <Text
+          position={[0, 3, 0]}
+          fontSize={0.9}
+          color={bot.color}
+          anchorX="center"
+          anchorY="middle"
+          outlineWidth={0.05}
+          outlineColor="#000"
+        >
+          {settings.showNames ? bot.name : ''}
+          {settings.showNames && settings.showScore ? ' ' : ''}
+          {settings.showScore ? `(${score})` : ''}
+        </Text>
+      )}
       <group scale={[scale, 1, scale]}>
         <DeepHole scale={1} color={bot.color} isPlayer={false} />
       </group>

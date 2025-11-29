@@ -30,6 +30,9 @@ function UI() {
   const currentRoomId = useStore((s) => s.currentRoomId);
   const selectedSkin = useStore((s) => s.selectedSkin);
   const setSkin = useStore((s) => s.setSkin);
+  const settings = useStore((s) => s.settings);
+  const updateSettings = useStore((s) => s.updateSettings);
+  const startSpectating = useStore((s) => s.startSpectating);
   
   const [leaderboard, setLeaderboard] = useState([]);
   const [coords, setCoords] = useState({ x: 0, z: 0 });
@@ -157,6 +160,10 @@ function UI() {
     joinGame(nickname, selectedRoom); 
   };
 
+  const handleSpectate = () => {
+    startSpectating(selectedRoom);
+  };
+
   return (
     <>
       {/* Error Toast */}
@@ -264,17 +271,40 @@ function UI() {
                             PLAY
                         </button>
                         
-                        <div className="w-full bg-[#eab308] hover:bg-[#ca8a04] text-white font-titan py-3 rounded-xl text-center text-lg shadow-[0_4px_0_#a16207] cursor-pointer active:shadow-none active:translate-y-1 transition-all border-2 border-yellow-300">
+                        <button
+                            onClick={handleSpectate}
+                            className="w-full bg-[#eab308] hover:bg-[#ca8a04] text-white font-titan py-3 rounded-xl text-center text-lg shadow-[0_4px_0_#a16207] cursor-pointer active:shadow-none active:translate-y-1 transition-all border-2 border-yellow-300"
+                        >
                             SPECTATE
-                        </div>
+                        </button>
                     </>
                  )}
 
                  <div className="grid grid-cols-2 gap-3 text-xs text-gray-700 font-bold mt-2 bg-gray-200 p-3 rounded-xl shadow-inner">
-                   <label className="flex items-center gap-2 cursor-pointer select-none"><input type="checkbox" defaultChecked className="accent-blue-600 w-4 h-4" readOnly /> Show Names</label>
-                   <label className="flex items-center gap-2 cursor-pointer select-none"><input type="checkbox" defaultChecked className="accent-blue-600 w-4 h-4" readOnly /> Show Score</label>
-                   <label className="flex items-center gap-2 cursor-pointer select-none"><input type="checkbox" defaultChecked className="accent-blue-600 w-4 h-4" readOnly /> Dark Theme</label>
-                   <label className="flex items-center gap-2 cursor-pointer select-none"><input type="checkbox" className="accent-blue-600 w-4 h-4" readOnly /> Hide Chat</label>
+                   <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.showNames} 
+                        onChange={(e) => updateSettings({ showNames: e.target.checked })}
+                        className="accent-blue-600 w-4 h-4" 
+                      /> Show Names
+                   </label>
+                   <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.showScore} 
+                        onChange={(e) => updateSettings({ showScore: e.target.checked })}
+                        className="accent-blue-600 w-4 h-4" 
+                      /> Show Score
+                   </label>
+                   <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.hideChat} 
+                        onChange={(e) => updateSettings({ hideChat: e.target.checked })}
+                        className="accent-blue-600 w-4 h-4" 
+                      /> Hide Chat
+                   </label>
                  </div>
                </div>
              </div>
@@ -303,33 +333,51 @@ function UI() {
                     <div className="p-8 grid grid-cols-2 md:grid-cols-3 gap-6 bg-[#121212] max-h-[60vh] overflow-y-auto">
                        {SKINS.map((skin) => {
                           const isSelected = selectedSkin === skin.id;
+                          const isLegendary = skin.type === 'legendary';
+                          
                           return (
                              <div 
                                 key={skin.id}
                                 onClick={() => setSkin(skin.id)}
                                 className={`relative bg-[#1e1e1e] rounded-2xl p-4 border-4 transition-all duration-200 cursor-pointer hover:scale-105 group
-                                   ${isSelected ? 'border-[#4ade80] shadow-[0_0_20px_rgba(74,222,128,0.3)]' : 'border-[#333] hover:border-gray-500'}
+                                   ${isSelected 
+                                      ? 'border-[#4ade80] shadow-[0_0_20px_rgba(74,222,128,0.3)]' 
+                                      : isLegendary 
+                                         ? `border-[${skin.color}] border-opacity-50 hover:border-opacity-100` 
+                                         : 'border-[#333] hover:border-gray-500'
+                                   }
                                 `}
+                                style={isLegendary && !isSelected ? { borderColor: skin.color, boxShadow: `0 0 15px ${skin.color}40` } : {}}
                              >
+                                {/* Legendary Badge */}
+                                {isLegendary && (
+                                   <div className="absolute -top-3 -right-3 bg-yellow-500 text-black font-black text-[10px] px-2 py-1 rounded-full shadow-lg border-2 border-white z-10 animate-pulse tracking-widest">
+                                      LEGENDARY
+                                   </div>
+                                )}
+                                
                                 {/* Preview Circle */}
                                 <div className="aspect-square rounded-full mb-4 relative overflow-hidden shadow-inner bg-black/50 flex items-center justify-center">
                                    <div 
                                       className={`w-[70%] h-[70%] rounded-full shadow-[inset_0_-10px_20px_rgba(0,0,0,0.5)] relative
-                                         ${skin.type === 'legendary' ? 'animate-pulse shadow-[0_0_30px_#00ffff]' : ''}
+                                         ${isLegendary ? 'animate-pulse' : ''}
                                       `}
                                       style={{ 
                                          backgroundColor: skin.color,
-                                         boxShadow: skin.type === 'legendary' ? '0 0 20px cyan, inset 0 0 20px white' : undefined
+                                         color: skin.color, 
+                                         boxShadow: isLegendary ? `0 0 20px ${skin.color}, inset 0 0 20px white` : undefined
                                       }}
                                    >
-                                      {skin.type === 'legendary' && (
+                                      {isLegendary && (
                                          <div className="absolute inset-0 border-4 border-white/50 rounded-full animate-ping opacity-50"></div>
                                       )}
                                    </div>
                                 </div>
 
                                 <div className="text-center">
-                                   <h3 className={`font-titan text-xl tracking-wide drop-shadow-md ${skin.type === 'legendary' ? 'text-[#00ffff]' : 'text-white'}`}>
+                                   <h3 className={`font-titan text-xl tracking-wide drop-shadow-md ${isLegendary ? 'text-transparent bg-clip-text' : 'text-white'}`}
+                                       style={isLegendary ? { backgroundImage: `linear-gradient(to right, #fff, ${skin.color})`, WebkitBackgroundClip: 'text' } : {}}
+                                   >
                                       {skin.name}
                                    </h3>
                                    <div className="mt-2">
@@ -491,28 +539,30 @@ function UI() {
       </div>
 
       {/* --- CHAT --- */}
-      <div className="absolute bottom-4 left-4 z-20 w-80 flex flex-col gap-2 pointer-events-auto">
-        <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 scrollbar-hide mask-image-gradient">
-          {chatMessages.map((msg) => (
-            <div key={msg.id} className="text-sm text-white drop-shadow-md break-words">
-              <span style={{ color: msg.color }} className="font-bold mr-1">
-                {msg.sender}:
-              </span>
-              <span className="opacity-90">{msg.text}</span>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
+      {!settings.hideChat && (
+        <div className="absolute bottom-4 left-4 z-20 w-80 flex flex-col gap-2 pointer-events-auto">
+          <div className="bg-black/40 backdrop-blur-sm rounded-lg p-2 h-40 overflow-y-auto flex flex-col gap-1 scrollbar-hide mask-image-gradient">
+            {chatMessages.map((msg) => (
+              <div key={msg.id} className="text-sm text-white drop-shadow-md break-words">
+                <span style={{ color: msg.color }} className="font-bold mr-1">
+                  {msg.sender}:
+                </span>
+                <span className="opacity-90">{msg.text}</span>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+          <form onSubmit={handleChatSubmit} className="relative">
+            <input 
+              type="text" 
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Press enter to chat..."
+              className="w-full bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-white/50 text-sm placeholder-white/40 backdrop-blur-sm"
+            />
+          </form>
         </div>
-        <form onSubmit={handleChatSubmit} className="relative">
-          <input 
-            type="text" 
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            placeholder="Press enter to chat..."
-            className="w-full bg-black/50 text-white px-3 py-2 rounded border border-white/20 focus:outline-none focus:border-white/50 text-sm placeholder-white/40 backdrop-blur-sm"
-          />
-        </form>
-      </div>
+      )}
 
       {/* --- GAME OVER MODAL --- */}
       {isGameOver && gameStatus === 'playing' && (
